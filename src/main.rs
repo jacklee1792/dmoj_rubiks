@@ -14,7 +14,7 @@ use perm::*;
 use piece::*;
 use pruning::*;
 
-use std::collections::{HashMap, VecDeque};
+use std::collections::VecDeque;
 
 struct SolveContext<'a, P1, P2> {
     pub best: Option<i32>,
@@ -52,7 +52,10 @@ where
         return;
     }
     for m in Move::drud_moveset() {
-        if sc.best.is_some_and(|best| best <= sc.stack_dr.len() as i32 + fin_len) {
+        if sc
+            .best
+            .is_some_and(|best| best <= sc.stack_dr.len() as i32 + fin_len)
+        {
             break;
         }
         if let Some(last) = sc.stack_fin.last().or(sc.stack_dr.last()) {
@@ -109,8 +112,6 @@ where
 }
 
 fn main() {
-    use Move::*;
-
     let alg = "R' U' F L D' R2 D' B' R D' B L U R2 D2 F2 R2 U R2 D' R2 B2 D R' U' F";
     let moves: Vec<Move> = alg.split(" ").map(|m| m.try_into().unwrap()).collect();
     let c = moves

@@ -1,7 +1,5 @@
 use std::fmt::{self, Display, Formatter};
 
-use crate::*;
-
 #[derive(Debug, Copy, Clone, Eq, Ord)]
 pub enum Edge {
     UF,

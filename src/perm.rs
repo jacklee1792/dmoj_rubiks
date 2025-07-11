@@ -1,5 +1,5 @@
-use core::{iter::Iterator, ops::Index};
-use std::{array, fmt::Debug, ops::Add};
+use core::iter::Iterator;
+use std::{fmt::Debug, ops::Add};
 
 use crate::*;
 
