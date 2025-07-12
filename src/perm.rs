@@ -175,13 +175,14 @@ impl<const N: usize> Perm<N> {
     /// Index of this permutation, some integer in [0, N!). The index of the identity
     /// is 0.
     pub fn index(&self) -> usize {
-        let mut used = [false; N];
+        let mut unused = 0xffff;
         let mut ans = 0;
         for i in 0..N {
-            let x = self.dest(i);
-            let ord = used[0..x as usize].iter().filter(|y| !**y).count();
-            ans += ord * fact(N - 1 - i);
-            used[x as usize] = true;
+            let j = 1u16.wrapping_shl(self.dest(i) as u32);
+            let invs = (unused & (j - 1)).count_ones();
+            ans += invs as usize;
+            ans *= usize::max(N - 1 - i, 1);
+            unused ^= j;
         }
         ans
     }
@@ -220,23 +221,62 @@ impl<const N: usize> Perm<N> {
         ans
     }
 
-    /// Like `index_partial`, but does not consider relative ordering of the indices
-    /// passed in. As a consequence, the result is some integer in [0, Binom(N, K)).
-    pub fn index_partial_unordered(&self, indices: &[usize]) -> usize {
-        let relabel = self.relabel(indices);
-        let k = indices.len();
-        let mut ans = 0;
-        let mut locs = [N as u8; N]; // Avoid dynamic allocation
-        for i in indices {
-            locs[*i] = relabel[self.dest(*i) as usize]
+    /// Index of this permutation among all permutations, considering only where the given
+    /// indices are mapped to. The index of a permutation that keeps all indices in-place is 0.
+    pub fn index_partial_unordered(&self, indices: u16) -> usize {
+        let mut img = 0u16;
+        let mut m = indices;
+        let k = indices.count_ones() as usize;
+        while m != 0 {
+            let i = m.trailing_zeros() as usize;
+            let j = self.dest(i);
+            let b = 1 << j;
+            let below = (indices & (b - 1)).count_ones() as usize;
+            let j = if indices & b != 0 {
+                below
+            } else {
+                k + j - below
+            };
+            img |= 1 << j;
+            m &= m - 1;
         }
-        locs.sort();
-        let mut prev = 0;
-        for (i, loc) in locs.into_iter().enumerate().take(k) {
-            ans += binom(N - prev, k - i) - binom(N - loc as usize, k - i);
-            prev = loc as usize + 1;
+
+        let mut ans = 0;
+        let mut rem = k;
+        let mut p = 0;
+        while img != 0 {
+            let j = img.trailing_zeros() as usize;
+            ans += binom(N - p, rem as usize) - binom(N - j as usize, rem as usize);
+            p = (j + 1) as usize;
+            img &= img - 1;
+            rem -= 1;
         }
         ans
+        // let relabel = self.relabel(indices);
+        // let k = indices.len();
+        // let mut ans = 0;
+        // let mut locs = [N as u8; N]; // Avoid dynamic allocation
+        // for i in indices {
+        //     locs[*i] = relabel[self.dest(*i) as usize]
+        // }
+        // locs.sort();
+        // let mut prev = 0;
+        // for (i, loc) in locs.into_iter().enumerate().take(k) {
+        //     ans += binom(N - prev, k - i) - binom(N - loc as usize, k - i);
+        //     prev = loc as usize + 1;
+        // }
+        // ans
+    }
+
+    /// Mask the permutation, deleting other indices which are not in the mask. Assumes that
+    /// the mask and its complement are disjoint, i.e. no elements are permuted between the two.
+    pub fn mask<const K: usize>(&self, indices: &[usize; K]) -> Perm<K> {
+        let relabel = self.relabel(indices);
+        let mut ret = Perm::<K>(0);
+        for i in indices {
+            ret.set_dest_nomask(relabel[*i] as usize, relabel[self.dest(*i)] as usize);
+        }
+        ret
     }
 
     pub fn compose(&self, rhs: Self) -> Self {
@@ -297,6 +337,28 @@ mod test {
         for i in 0..720 {
             let p = Perm::<6>::from_index(i);
             assert_eq!(p.index(), i);
+        }
+    }
+
+    #[test]
+    fn test_index_partial_unordered() {
+        let p = Perm::<4>::from_dests(&[3, 2, 1, 0]);
+        assert_ne!(p.index_partial_unordered(0b0011), 0);
+
+        let p = Perm::<4>::from_dests(&[0, 1, 2, 3]);
+        assert_eq!(p.index_partial_unordered(0b0011), 0);
+
+        let p = Perm::<4>::from_dests(&[1, 0, 2, 3]);
+        assert_eq!(p.index_partial_unordered(0b0011), 0);
+
+        let mut count = [0; 20];
+        for i in 0..720 {
+            let p = Perm::<6>::from_index(i);
+            let j = p.index_partial_unordered(0b010101);
+            count[j] += 1;
+        }
+        for c in count {
+            assert_eq!(c, 720 / 20);
         }
     }
 }

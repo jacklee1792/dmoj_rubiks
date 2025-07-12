@@ -147,9 +147,10 @@ impl Cube {
             false
         } else {
             use Edge::*;
-            self.ep
-                .index_partial_unordered(&[FL.coord(), FR.coord(), BL.coord(), BR.coord()])
-                == 0
+            let mask =
+                (1 << FL.coord()) | (1 << FR.coord()) | (1 << BL.coord()) | (1 << BR.coord());
+            let udslice_coord = self.ep.index_partial_unordered(mask);
+            udslice_coord == 0
         }
     }
 

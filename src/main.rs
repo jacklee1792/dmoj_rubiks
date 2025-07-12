@@ -45,6 +45,7 @@ where
                 .collect::<Vec<_>>()
                 .join(" ");
             println!("  solution: {} ({})", alg, sol_len);
+            std::process::exit(0);
         }
         return;
     }
@@ -76,7 +77,8 @@ where
 {
     if sd.stack_dr.len() as i32 == dr_len {
         if c.is_drud() {
-            for target_fin in 0..=20 {
+            // println!("found dr: {:?}", sd.stack_dr);
+            for target_fin in 0..=13 {
                 solve_fin(c.clone(), target_fin, sd);
             }
         }
@@ -112,7 +114,7 @@ where
 }
 
 fn main() {
-    let alg = "R' U' F L D' R2 D' B' R D' B L U R2 D2 F2 R2 U R2 D' R2 B2 D R' U' F";
+    let alg = "R' U' F B2 D2 L B2 D2 U2 L' U2 B2 R' D2 L2 D' L F' U' R' U' F D L' R' U' F";
     let moves: Vec<Move> = alg.split(" ").map(|m| m.try_into().unwrap()).collect();
     let c = moves
         .into_iter()
@@ -123,13 +125,17 @@ fn main() {
 
     let pt_drud = PTFlipUDSlice::compute();
     let pt_fin = PTFinCP::compute();
-    let mut sd = SolveContext {
-        best: None,
-        stack_dr: Vec::new(),
-        stack_fin: Vec::new(),
-        pt_drud: &pt_drud,
-        pt_fin: &pt_fin,
-    };
 
-    solve(c, &mut sd);
+    pt_drud.report();
+    pt_fin.report();
+
+    // let mut sd = SolveContext {
+    //     best: None,
+    //     stack_dr: Vec::new(),
+    //     stack_fin: Vec::new(),
+    //     pt_drud: &pt_drud,
+    //     pt_fin: &pt_fin,
+    // };
+
+    // solve(c, &mut sd);
 }
