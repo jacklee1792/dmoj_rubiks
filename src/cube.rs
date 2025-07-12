@@ -46,6 +46,10 @@ impl CO {
         let m = Wrapping(((self.0 & c.0) | m) & 0xaaaa);
         Self(((Wrapping(self.0) + Wrapping(c.0)) - m - (m >> 1)).0)
     }
+
+    pub fn inverse(&self) -> Self {
+	    CO((self.0 & 0x5555).wrapping_shl(1) | ((self.0 & 0xaaaa) >> 1))
+    }
 }
 
 impl Display for CO {
@@ -83,6 +87,19 @@ impl EO {
             ret |= 1 << e.coord();
         }
         Self(ret)
+    }
+
+    pub fn inverse(&self) -> Self {
+        *self
+    }
+
+    pub fn coord(&self) -> usize {
+        self.0 as usize & 0x7ff
+    }
+
+    pub fn from_coord(c: usize) -> Self {
+        let p = c.count_ones() as u16 & 1;
+        Self(c as u16 | (p << 11))
     }
 
     pub fn swizzle(&self, p: Perm<12>) -> Self {
@@ -136,6 +153,14 @@ impl Cube {
     pub fn find_edge(&self, edge: Edge) -> Edge {
         let coord = self.ep.dest(edge.coord());
         Edge::from_coord(coord)
+    }
+
+    pub fn inverse(&self) -> Self {
+        let ep = self.ep.inverse();
+        let cp = self.cp.inverse();
+        let eo = self.eo.inverse().swizzle(ep);
+        let co = self.co.inverse().swizzle(cp);
+        Self { eo, co, ep, cp }
     }
 
     pub fn is_eofb(&self) -> bool {
@@ -202,24 +227,24 @@ impl From<Move> for Cube {
     fn from(m: Move) -> Self {
         use Move::*;
         match m {
-            U => Cube::from_repr(0x0000, 0x0000, 0xba9876540321, 0x76540321),
-            D => Cube::from_repr(0x0000, 0x0000, 0xba9865473210, 0x65473210),
-            F => Cube::from_repr(0x0311, 0x0906, 0xba0476593218, 0x76153204),
-            B => Cube::from_repr(0x0c44, 0x9060, 0x26987b543a10, 0x37542610),
-            R => Cube::from_repr(0x0000, 0x4281, 0x7a938654b210, 0x46507213),
-            L => Cube::from_repr(0x0000, 0x2418, 0xb15876a43290, 0x72643150),
-            U2 => Cube::from_repr(0x0000, 0x0000, 0xba9876541032, 0x76541032),
-            U3 => Cube::from_repr(0x0000, 0x0000, 0xba9876542103, 0x76542103),
-            D2 => Cube::from_repr(0x0000, 0x0000, 0xba9854763210, 0x54763210),
-            D3 => Cube::from_repr(0x0000, 0x0000, 0xba9847653210, 0x47653210),
-            F2 => Cube::from_repr(0x0000, 0x0000, 0xba8976503214, 0x76013245),
-            F3 => Cube::from_repr(0x0311, 0x0906, 0xba4076583219, 0x76403251),
-            B2 => Cube::from_repr(0x0000, 0x0000, 0xab9872543610, 0x23546710),
-            B3 => Cube::from_repr(0x0c44, 0x9060, 0x62987a543b10, 0x62547310),
-            R2 => Cube::from_repr(0x0000, 0x0000, 0x8a9b36547210, 0x06534217),
-            R3 => Cube::from_repr(0x0000, 0x4281, 0x3a97b6548210, 0x36570214),
-            L2 => Cube::from_repr(0x0000, 0x0000, 0xb9a876143250, 0x71243560),
-            L3 => Cube::from_repr(0x0000, 0x2418, 0xb518769432a0, 0x75143620),
+            U => Cube::from_repr(0x000, 0x0000, 0xba9876540321, 0x76540321),
+            D => Cube::from_repr(0x000, 0x0000, 0xba9865473210, 0x65473210),
+            F => Cube::from_repr(0x311, 0x0906, 0xba0476593218, 0x76153204),
+            B => Cube::from_repr(0xc44, 0x9060, 0x26987b543a10, 0x37542610),
+            R => Cube::from_repr(0x000, 0x4281, 0x7a938654b210, 0x46507213),
+            L => Cube::from_repr(0x000, 0x2418, 0xb15876a43290, 0x72643150),
+            U2 => Cube::from_repr(0x000, 0x0000, 0xba9876541032, 0x76541032),
+            U3 => Cube::from_repr(0x000, 0x0000, 0xba9876542103, 0x76542103),
+            D2 => Cube::from_repr(0x000, 0x0000, 0xba9854763210, 0x54763210),
+            D3 => Cube::from_repr(0x000, 0x0000, 0xba9847653210, 0x47653210),
+            F2 => Cube::from_repr(0x000, 0x0000, 0xba8976503214, 0x76013245),
+            F3 => Cube::from_repr(0x311, 0x0906, 0xba4076583219, 0x76403251),
+            B2 => Cube::from_repr(0x000, 0x0000, 0xab9872543610, 0x23546710),
+            B3 => Cube::from_repr(0xc44, 0x9060, 0x62987a543b10, 0x62547310),
+            R2 => Cube::from_repr(0x000, 0x0000, 0x8a9b36547210, 0x06534217),
+            R3 => Cube::from_repr(0x000, 0x4281, 0x3a97b6548210, 0x36570214),
+            L2 => Cube::from_repr(0x000, 0x0000, 0xb9a876143250, 0x71243560),
+            L3 => Cube::from_repr(0x000, 0x2418, 0xb518769432a0, 0x75143620),
         }
     }
 }

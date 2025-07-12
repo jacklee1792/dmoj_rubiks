@@ -30,49 +30,86 @@ pub trait PTable: Sized {
     }
 }
 
-pub struct PTFlipUDSlice([u8; 495 * 2048]);
+pub struct PTFlipUDSlice {
+    eo_sym8: [(Cube, usize); 2048],
+    pt: [u8; 495 * 336],
+}
 
 impl PTFlipUDSlice {
-    pub fn coord_flipudslice(c: &Cube) -> usize {
+    pub fn coord_flipudslice(eo_sym8: &[(Cube, usize)], c: &Cube) -> usize {
         use Edge::*;
-        let eo_coord = c.eo.0 & ((1 << 11) - 1); // Last bit is fixed by parity
-        let mask = (1 << FL.coord()) | (1 << FR.coord()) | (1 << BL.coord()) | (1 << BR.coord());
+        let (conj, eo_cls) = eo_sym8[c.eo.coord()].clone();
+        let c = conj.compose(&c).compose(&conj.inverse());
+        let mask = (1 << FL.coord()) | (1 << FR.coord()) | (1 << BL.coord() | (1 << BR.coord()));
         let udslice_coord = c.ep.index_partial_unordered(mask);
-        udslice_coord * 2048 + (eo_coord as usize)
+        udslice_coord * 336 + eo_cls
     }
 }
 
 impl PTable for PTFlipUDSlice {
-    const NAME: &'static str = "FlipUDSlice";
-    const N_ENTRIES: usize = 495 * 2048;
+    const NAME: &'static str = "FlipUDSliceSym";
+    const N_ENTRIES: usize = 495 * 336;
 
     fn compute() -> Self {
-        let mut dist = [21; 495 * 2048];
+        // let y = Cube::from_repr(0x000, 0x0000, 0x8ba947650321, 0x47650321);
+        let x2 = Cube::from_repr(0x000, 0x0000, 0x89ab30127456, 0x01234567);
+        let lr = Cube::from_repr(0x000, 0x0000, 0xab8956741230, 0x67452301);
+        let y2 = Cube::from_repr(0x000, 0x0000, 0x98ba54761032, 0x54761032);
+        let mut eo_sym8: [Option<(Cube, usize)>; 2048] = [const { None }; 2048];
+        let mut cls = 0;
+        for eo in 0..2048 {
+            if eo_sym8[eo].is_some() {
+                continue;
+            }
+            let c = Cube{ eo: EO::from_coord(eo), ..Cube::default() };
+            for sym in 0..8 {
+                let mut s = Cube::default();
+                if sym & 1 != 0 {
+                    s = s.compose(&x2);
+                }
+                if sym & 2 != 0 {
+                    s = s.compose(&y2);
+                }
+                if sym & 4 != 0 {
+                    s = s.compose(&lr);
+                }
+                let s1 = s.inverse();
+                let c2 = s.compose(&c).compose(&s1);
+                eo_sym8[c2.eo.coord()] = Some((s1, cls));
+            }
+            cls += 1;
+        }
+        let eo_sym8 = eo_sym8.map(Option::unwrap);
+
+        let mut dist = [21; 495 * 336];
         let mut q: VecDeque<(Cube, usize)> = VecDeque::new();
         let c = Cube::default();
-        let coord = Self::coord_flipudslice(&c);
+        let coord = Self::coord_flipudslice(&eo_sym8, &c);
         dist[coord] = 0;
         q.push_back((c, coord));
 
         while let Some((c, coord)) = q.pop_front() {
             for m in Move::all() {
                 let c2 = c.apply_move_edges(*m);
-                let coord2 = Self::coord_flipudslice(&c2);
+                let coord2 = Self::coord_flipudslice(&eo_sym8, &c2);
                 if dist[coord2] == 21 {
                     dist[coord2] = dist[coord] + 1;
                     q.push_back((c2, coord2));
                 }
             }
         }
-        Self(dist)
+        Self {
+            eo_sym8,
+            pt: dist,
+        }
     }
 
     fn eval(&self, c: &Cube) -> i32 {
-        self.eval_coord(Self::coord_flipudslice(&c))
+        self.eval_coord(Self::coord_flipudslice(&self.eo_sym8, &c))
     }
 
     fn eval_coord(&self, c: usize) -> i32 {
-        self.0[c] as i32
+        self.pt[c] as i32
     }
 }
 
