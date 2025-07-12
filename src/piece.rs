@@ -1,6 +1,8 @@
+use crate::*;
+
 use std::fmt::{self, Display, Formatter};
 
-#[derive(Debug, Copy, Clone, Eq, Ord)]
+#[derive(Debug, Copy, Clone, Eq, Ord, Hash)]
 pub enum Edge {
     UF,
     UL,
@@ -14,6 +16,51 @@ pub enum Edge {
     FL,
     BL,
     BR,
+}
+
+impl TryFrom<&str> for Edge {
+    type Error = ();
+
+    fn try_from(s: &str) -> Result<Self, Self::Error> {
+        if s.len() != 2 {
+            return Err(());
+        }
+        let c1: Face = s.chars().nth(0).unwrap().try_into().unwrap();
+        let c2: Face = s.chars().nth(1).unwrap().try_into().unwrap();
+        (c1, c2).try_into()
+    }
+}
+
+impl TryFrom<(Face, Face)> for Edge {
+    type Error = ();
+
+    fn try_from(f: (Face, Face)) -> Result<Self, Self::Error> {
+        use Edge::*;
+        use Face::*;
+        let mut f = [f.0, f.1];
+        f.sort();
+        match f {
+            [U, F] => Ok(UF),
+            [U, L] => Ok(UL),
+            [U, B] => Ok(UB),
+            [U, R] => Ok(UR),
+            [D, F] => Ok(DF),
+            [D, L] => Ok(DL),
+            [D, B] => Ok(DB),
+            [D, R] => Ok(DR),
+            [F, R] => Ok(FR),
+            [F, L] => Ok(FL),
+            [B, L] => Ok(BL),
+            [B, R] => Ok(BR),
+            _ => Err(()),
+        }
+    }
+}
+
+impl Display for Edge {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
 }
 
 impl Edge {
@@ -67,7 +114,7 @@ impl PartialOrd for Edge {
     }
 }
 
-#[derive(Copy, Debug, Clone, Eq, Ord)]
+#[derive(Copy, Debug, Clone, Eq, Ord, Hash)]
 pub enum Corner {
     UFR,
     UFL,
@@ -77,6 +124,51 @@ pub enum Corner {
     DFL,
     DBL,
     DBR,
+}
+
+impl TryFrom<&str> for Corner {
+    type Error = ();
+
+    fn try_from(s: &str) -> Result<Self, Self::Error> {
+        if s.len() != 3 {
+            return Err(());
+        }
+
+        let mut chars = s.chars();
+        let f1: Face = chars.next().unwrap().try_into().unwrap();
+        let f2: Face = chars.next().unwrap().try_into().unwrap();
+        let f3: Face = chars.next().unwrap().try_into().unwrap();
+        (f1, f2, f3).try_into()
+    }
+}
+
+impl TryFrom<(Face, Face, Face)> for Corner {
+    type Error = ();
+
+    fn try_from(f: (Face, Face, Face)) -> Result<Self, Self::Error> {
+        use Corner::*;
+        use Face::*;
+        let mut f = [f.0, f.1, f.2];
+        f.sort();
+
+        match f {
+            [U, F, R] => Ok(UFR),
+            [U, F, L] => Ok(UFL),
+            [U, B, L] => Ok(UBL),
+            [U, B, R] => Ok(UBR),
+            [D, F, R] => Ok(DFR),
+            [D, F, L] => Ok(DFL),
+            [D, B, L] => Ok(DBL),
+            [D, B, R] => Ok(DBR),
+            _ => Err(()),
+        }
+    }
+}
+
+impl Display for Corner {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
 }
 
 impl Corner {
@@ -97,12 +189,6 @@ impl Corner {
     pub fn all() -> &'static [Corner] {
         use Corner::*;
         &[UFR, UFL, UBL, UBR, DFR, DFL, DBL, DBR]
-    }
-}
-
-impl Display for Corner {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?}", self)
     }
 }
 

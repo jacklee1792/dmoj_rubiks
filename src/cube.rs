@@ -113,6 +113,10 @@ pub struct Cube {
 }
 
 impl Cube {
+    pub fn new(eo: EO, co: CO, ep: Perm<12>, cp: Perm<8>) -> Self {
+        Self { eo, co, ep, cp }
+    }
+
     pub fn from_repr(eo: u16, co: u16, ep: u64, cp: u64) -> Self {
         Self {
             eo: EO::from_repr(eo),

@@ -252,20 +252,6 @@ impl<const N: usize> Perm<N> {
             rem -= 1;
         }
         ans
-        // let relabel = self.relabel(indices);
-        // let k = indices.len();
-        // let mut ans = 0;
-        // let mut locs = [N as u8; N]; // Avoid dynamic allocation
-        // for i in indices {
-        //     locs[*i] = relabel[self.dest(*i) as usize]
-        // }
-        // locs.sort();
-        // let mut prev = 0;
-        // for (i, loc) in locs.into_iter().enumerate().take(k) {
-        //     ans += binom(N - prev, k - i) - binom(N - loc as usize, k - i);
-        //     prev = loc as usize + 1;
-        // }
-        // ans
     }
 
     /// Mask the permutation, deleting other indices which are not in the mask. Assumes that
