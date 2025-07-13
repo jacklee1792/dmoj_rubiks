@@ -203,17 +203,22 @@ fn main() {
     use Move::*;
 
     let start = std::time::Instant::now();
-    let c = read_cube_net();
+    // let c = read_cube_net();
 
-    let pt_drud = PTFlipUDSlice::compute();
-    let pt_fin = PTFinCP::compute();
+    let alg = "U' F2 U B2 L2 D B2 D' R2 D' R2 U2 L2 B' L B2 F' R D' L' B2 L' U2";
+    let c = alg
+        .split_whitespace()
+        .map(|m| Move::try_from(m).unwrap())
+        .map(|m| Cube::from(m))
+        .reduce(|a, b| a.compose(&b))
+        .unwrap();
 
-    // pt_drud.report();
-    // pt_fin.report();
+    let pt_drud = PT1::compute();
+    let pt_fin = PT2::compute();
 
     let mut sd = SolveContext {
         start,
-        time_limit: std::time::Duration::from_secs(2),
+        time_limit: std::time::Duration::from_secs(1),
         best: None,
         stack_dr: Vec::new(),
         stack_fin: Vec::new(),

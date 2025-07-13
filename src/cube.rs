@@ -50,6 +50,29 @@ impl CO {
     pub fn inverse(&self) -> Self {
         CO((self.0 & 0x5555).wrapping_shl(1) | ((self.0 & 0xaaaa) >> 1))
     }
+
+    pub fn coord(&self) -> usize {
+        let mut c = 0;
+        for i in (0..7).rev() {
+            c *= 3;
+            c += (self.0 >> (2 * i)) & 3;
+        }
+        c as usize
+    }
+
+    pub fn from_coord(mut c: usize) -> Self {
+        let mut ret = 0;
+        let mut par = 0;
+        for i in 0..7 {
+            let x = c % 3;
+            par += x;
+            ret |= x << (2 * i);
+            c /= 3;
+        }
+        let last = (3 - (par % 3)) % 3;
+        ret |= last << 14;
+        Self(ret as u16)
+    }
 }
 
 impl Display for CO {
@@ -190,32 +213,35 @@ impl Cube {
             && self.cp == Perm::<8>::default()
     }
 
-    pub fn compose_edges(&self, c: &Self) -> (EO, Perm<12>) {
+    pub fn compose_edges(&self, c: &Self) -> Self {
         let eo = self.eo.swizzle(c.ep).compose(c.eo);
         let ep = self.ep.compose(c.ep);
-        (eo, ep)
-    }
-
-    pub fn compose_corners(&self, c: &Self) -> (CO, Perm<8>) {
-        let co = self.co.swizzle(c.cp).compose(c.co);
-        let cp = self.cp.compose(c.cp);
-        (co, cp)
-    }
-
-    pub fn compose(&self, c: &Self) -> Self {
-        let (eo, ep) = self.compose_edges(c);
-        let (co, cp) = self.compose_corners(c);
-        Self { eo, co, ep, cp }
-    }
-
-    pub fn apply_move_edges(&self, m: Move) -> Self {
-        let (eo, ep) = self.compose_edges(&m.into());
         Self { eo, ep, ..*self }
     }
 
-    pub fn apply_move_corners(&self, m: Move) -> Self {
-        let (co, cp) = self.compose_corners(&m.into());
+    pub fn compose_corners(&self, c: &Self) -> Self {
+        let co = self.co.swizzle(c.cp).compose(c.co);
+        let cp = self.cp.compose(c.cp);
         Self { co, cp, ..*self }
+    }
+
+    pub fn compose(&self, c: &Self) -> Self {
+        let ce = self.compose_edges(c);
+        let cc = self.compose_corners(c);
+        Self {
+            eo: ce.eo,
+            co: cc.co,
+            ep: ce.ep,
+            cp: cc.cp,
+        }
+    }
+
+    pub fn apply_move_edges(&self, m: Move) -> Self {
+        self.compose_edges(&m.into())
+    }
+
+    pub fn apply_move_corners(&self, m: Move) -> Self {
+        self.compose_corners(&m.into())
     }
 
     pub fn apply_move(&self, m: Move) -> Self {
