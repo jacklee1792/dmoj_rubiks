@@ -35,7 +35,7 @@ where
     P1: PTable,
     P2: PTable,
 {
-    if sc.start.elapsed() > sc.time_limit - Duration::from_millis(50) {
+    if sc.start.elapsed() > sc.time_limit - Duration::from_millis(50) && sc.best.is_some() {
         return;
     }
     if sc.stack_fin.len() as i32 == fin_len {
@@ -80,7 +80,7 @@ where
     P1: PTable,
     P2: PTable,
 {
-    if sc.start.elapsed() > sc.time_limit - Duration::from_millis(50) {
+    if sc.start.elapsed() > sc.time_limit - Duration::from_millis(50) && sc.best.is_some() {
         return;
     }
     if sc.stack_dr.len() as i32 == dr_len {

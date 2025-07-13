@@ -36,7 +36,7 @@ pub struct PTFlipUDSlice {
 }
 
 impl PTFlipUDSlice {
-    pub fn coord_flipudslice(eo_sym8: &[(Cube, usize)], c: &Cube) -> usize {
+    pub fn coord(eo_sym8: &[(Cube, usize)], c: &Cube) -> usize {
         use Edge::*;
         let (conj, eo_cls) = eo_sym8[c.eo.coord()].clone();
         let c = conj.compose(&c).compose(&conj.inverse());
@@ -84,14 +84,14 @@ impl PTable for PTFlipUDSlice {
         let mut dist = [21; 495 * 336];
         let mut q: VecDeque<(Cube, usize)> = VecDeque::new();
         let c = Cube::default();
-        let coord = Self::coord_flipudslice(&eo_sym8, &c);
+        let coord = Self::coord(&eo_sym8, &c);
         dist[coord] = 0;
         q.push_back((c, coord));
 
         while let Some((c, coord)) = q.pop_front() {
             for m in Move::all() {
                 let c2 = c.apply_move_edges(*m);
-                let coord2 = Self::coord_flipudslice(&eo_sym8, &c2);
+                let coord2 = Self::coord(&eo_sym8, &c2);
                 if dist[coord2] == 21 {
                     dist[coord2] = dist[coord] + 1;
                     q.push_back((c2, coord2));
@@ -105,7 +105,7 @@ impl PTable for PTFlipUDSlice {
     }
 
     fn eval(&self, c: &Cube) -> i32 {
-        self.eval_coord(Self::coord_flipudslice(&self.eo_sym8, &c))
+        self.eval_coord(Self::coord(&self.eo_sym8, &c))
     }
 
     fn eval_coord(&self, c: usize) -> i32 {
@@ -114,53 +114,87 @@ impl PTable for PTFlipUDSlice {
 }
 
 pub struct PTFinCP {
-    cp: [u8; 24 * 40320],
+    cp_sym16: [(Cube, usize); 40320],
+    pt: [u8; 24 * 2768],
 }
 
 impl PTFinCP {
-    fn coord_eslice_cp(c: &Cube) -> usize {
+    pub fn coord(cp_sym16: &[(Cube, usize)], c: &Cube) -> usize {
         use Edge::*;
+        let (conj, cp_cls) = cp_sym16[c.cp.index()].clone();
+        let c = conj.compose(&c).compose(&conj.inverse());
         let eslice = c.ep.mask(&[FL, FR, BL, BR].map(|e| e.coord())).index();
-        c.cp.index() * 24 + eslice
+        eslice * 2768 + cp_cls
     }
+}
 
-    fn compute_cp() -> [u8; 24 * 40320] {
-        let mut dist = [21; 24 * 40320];
+impl PTable for PTFinCP {
+    const NAME: &'static str = "FinCP";
+    const N_ENTRIES: usize = 24 * 2768;
+
+    fn compute() -> Self {
+        let y = Cube::from_repr(0x000, 0x0000, 0x8ba947650321, 0x47650321);
+        let x2 = Cube::from_repr(0x000, 0x0000, 0x89ab30127456, 0x01234567);
+        let lr = Cube::from_repr(0x000, 0x0000, 0xab8956741230, 0x67452301);
+        let y2 = Cube::from_repr(0x000, 0x0000, 0x98ba54761032, 0x54761032);
+        let mut cp_sym16: [Option<(Cube, usize)>; 40320] = [const { None }; 40320];
+        let mut cls = 0;
+        for cp in 0..40320 {
+            if cp_sym16[cp].is_some() {
+                continue;
+            }
+            let c = Cube{ cp: Perm::<8>::from_index(cp), ..Cube::default() };
+            for sym in 0..16 {
+                let mut s = Cube::default();
+                if sym & 1 != 0 {
+                    s = s.compose(&x2);
+                }
+                if sym & 2 != 0 {
+                    s = s.compose(&y2);
+                }
+                if sym & 4 != 0 {
+                    s = s.compose(&y);
+                }
+                if sym & 8 != 0 {
+                    s = s.compose(&lr);
+                }
+                let s1 = s.inverse();
+                let c2 = s.compose(&c).compose(&s1);
+                cp_sym16[c2.cp.index()] = Some((s1, cls));
+            }
+            cls += 1;
+        }
+        let cp_sym16 = cp_sym16.map(Option::unwrap);
+
+        let mut dist = [21; 24 * 2768];
         let mut q: VecDeque<(Cube, usize)> = VecDeque::new();
         let c = Cube::default();
-        let coord = Self::coord_eslice_cp(&c);
+        let coord = Self::coord(&cp_sym16, &c);
         dist[coord] = 0;
         q.push_back((c, coord));
 
         while let Some((c, coord)) = q.pop_front() {
             for m in Move::drud_moveset() {
                 let c2 = c.apply_move(*m);
-                let coord2 = Self::coord_eslice_cp(&c2);
+                let coord2 = Self::coord(&cp_sym16, &c2);
                 if dist[coord2] == 21 {
                     dist[coord2] = dist[coord] + 1;
                     q.push_back((c2, coord2));
                 }
             }
         }
-        dist
-    }
-}
 
-impl PTable for PTFinCP {
-    const NAME: &'static str = "FinCP";
-    const N_ENTRIES: usize = 24 * 40320;
-
-    fn compute() -> Self {
-        PTFinCP {
-            cp: Self::compute_cp(),
+        Self {
+            cp_sym16,
+            pt: dist,
         }
     }
 
     fn eval(&self, c: &Cube) -> i32 {
-        self.eval_coord(Self::coord_eslice_cp(c))
+        self.eval_coord(Self::coord(&self.cp_sym16, c))
     }
 
     fn eval_coord(&self, c: usize) -> i32 {
-        self.cp[c] as i32
+        self.pt[c] as i32
     }
 }
