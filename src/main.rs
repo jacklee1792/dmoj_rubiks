@@ -198,8 +198,8 @@ fn read_cube_net() -> Cube {
 }
 
 fn main() {
-    use Edge::*;
     use Corner::*;
+    use Edge::*;
     use Move::*;
 
     let start = std::time::Instant::now();

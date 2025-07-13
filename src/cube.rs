@@ -48,7 +48,7 @@ impl CO {
     }
 
     pub fn inverse(&self) -> Self {
-	    CO((self.0 & 0x5555).wrapping_shl(1) | ((self.0 & 0xaaaa) >> 1))
+        CO((self.0 & 0x5555).wrapping_shl(1) | ((self.0 & 0xaaaa) >> 1))
     }
 }
 

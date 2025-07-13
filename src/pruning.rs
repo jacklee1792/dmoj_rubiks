@@ -61,7 +61,10 @@ impl PTable for PTFlipUDSlice {
             if eo_sym8[eo].is_some() {
                 continue;
             }
-            let c = Cube{ eo: EO::from_coord(eo), ..Cube::default() };
+            let c = Cube {
+                eo: EO::from_coord(eo),
+                ..Cube::default()
+            };
             for sym in 0..8 {
                 let mut s = Cube::default();
                 if sym & 1 != 0 {
@@ -98,10 +101,7 @@ impl PTable for PTFlipUDSlice {
                 }
             }
         }
-        Self {
-            eo_sym8,
-            pt: dist,
-        }
+        Self { eo_sym8, pt: dist }
     }
 
     fn eval(&self, c: &Cube) -> i32 {
@@ -143,7 +143,10 @@ impl PTable for PTFinCP {
             if cp_sym16[cp].is_some() {
                 continue;
             }
-            let c = Cube{ cp: Perm::<8>::from_index(cp), ..Cube::default() };
+            let c = Cube {
+                cp: Perm::<8>::from_index(cp),
+                ..Cube::default()
+            };
             for sym in 0..16 {
                 let mut s = Cube::default();
                 if sym & 1 != 0 {
@@ -184,10 +187,7 @@ impl PTable for PTFinCP {
             }
         }
 
-        Self {
-            cp_sym16,
-            pt: dist,
-        }
+        Self { cp_sym16, pt: dist }
     }
 
     fn eval(&self, c: &Cube) -> i32 {
