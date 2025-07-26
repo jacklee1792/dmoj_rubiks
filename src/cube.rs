@@ -16,7 +16,7 @@ impl CO {
     }
 
     /// Construct straight from the u16 internal representation, without conversion overhead.
-    pub fn from_repr(repr: u16) -> Self {
+    pub const fn from_repr(repr: u16) -> Self {
         Self(repr)
     }
 
@@ -99,7 +99,7 @@ impl EO {
     }
 
     /// Construct straight from the u16 internal representation, without conversion overhead.
-    pub fn from_repr(repr: u16) -> Self {
+    pub const fn from_repr(repr: u16) -> Self {
         Self(repr)
     }
 
@@ -157,7 +157,7 @@ impl Cube {
         Self { eo, co, ep, cp }
     }
 
-    pub fn from_repr(eo: u16, co: u16, ep: u64, cp: u64) -> Self {
+    pub const fn from_repr(eo: u16, co: u16, ep: u64, cp: u64) -> Self {
         Self {
             eo: EO::from_repr(eo),
             co: CO::from_repr(co),
@@ -178,12 +178,35 @@ impl Cube {
         Edge::from_coord(coord)
     }
 
-    pub fn inverse(&self) -> Self {
+    pub fn inverse_edges(&self) -> Self {
         let ep = self.ep.inverse();
-        let cp = self.cp.inverse();
         let eo = self.eo.inverse().swizzle(ep);
+        Self {
+            ep,
+            eo,
+            ..Self::default()
+        }
+    }
+
+    pub fn inverse_corners(&self) -> Self {
+        let cp = self.cp.inverse();
         let co = self.co.inverse().swizzle(cp);
-        Self { eo, co, ep, cp }
+        Self {
+            cp,
+            co,
+            ..Self::default()
+        }
+    }
+
+    pub fn inverse(&self) -> Self {
+        let ce = self.inverse_edges();
+        let cc = self.inverse_corners();
+        Self {
+            eo: ce.eo,
+            co: cc.co,
+            ep: ce.ep,
+            cp: cc.cp,
+        }
     }
 
     pub fn is_eofb(&self) -> bool {

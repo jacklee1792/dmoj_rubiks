@@ -5,6 +5,7 @@ mod mov;
 mod perm;
 mod piece;
 mod pruning;
+mod sym;
 
 use cube::*;
 use face::*;
@@ -13,6 +14,7 @@ use mov::*;
 use perm::*;
 use piece::*;
 use pruning::*;
+use sym::*;
 
 use std::{
     collections::{HashMap, VecDeque},

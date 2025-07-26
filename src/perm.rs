@@ -58,10 +58,8 @@ impl<const N: usize> Perm<N> {
     }
 
     // The permutation, directly from the internal representation.
-    pub fn from_repr(repr: u64) -> Self {
-        let ret = Self(repr);
-        debug_assert!(ret.is_valid());
-        ret
+    pub const fn from_repr(repr: u64) -> Self {
+        Self(repr)
     }
 
     pub fn repr(&self) -> u64 {
