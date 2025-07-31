@@ -9,6 +9,23 @@ use crate::*;
 pub struct Sym(u8);
 
 impl Sym {
+    pub const UF: Self = Self(0);
+    pub const UR: Self = Self(1);
+    pub const UB: Self = Self(2);
+    pub const UL: Self = Self(3);
+    pub const DB: Self = Self(4);
+    pub const DR: Self = Self(5);
+    pub const DF: Self = Self(6);
+    pub const DL: Self = Self(7);
+    pub const UF2: Self = Self(8);
+    pub const UR2: Self = Self(9);
+    pub const UB2: Self = Self(10);
+    pub const UL2: Self = Self(11);
+    pub const DB2: Self = Self(12);
+    pub const DR2: Self = Self(13);
+    pub const DF2: Self = Self(14);
+    pub const DL2: Self = Self(15);
+
     // Symmetry via x2 rotation.
     const X2: Cube = Cube::from_repr(0x000, 0x0000, 0x89ab30127456, 0x01234567);
 

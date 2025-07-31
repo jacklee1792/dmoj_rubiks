@@ -100,6 +100,11 @@ impl Edge {
             _ => panic!("Invalid edge coordinate: {}", coord),
         }
     }
+
+    pub fn all() -> &'static [Edge] {
+        use Edge::*;
+        &[UF, UL, UB, UR, DF, DL, DB, DR, FR, FL, BL, BR]
+    }
 }
 
 impl PartialEq for Edge {

@@ -1,3 +1,4 @@
+mod coord;
 mod cube;
 mod face;
 mod math;
@@ -7,6 +8,7 @@ mod piece;
 mod pruning;
 mod sym;
 
+use coord::*;
 use cube::*;
 use face::*;
 use math::*;
@@ -21,74 +23,82 @@ use std::{
     time::Duration,
 };
 
-struct SolveContext<'a, P1, P2> {
+struct SolveContext {
     pub start: std::time::Instant,
     pub time_limit: std::time::Duration,
 
     pub best: Option<Vec<Move>>,
     pub stack_dr: Vec<Move>,
     pub stack_fin: Vec<Move>,
-    pub pt_drud: &'a P1,
-    pub pt_fin: &'a P2,
+    pub pt_drud: PrunTable<CoordCO, CoordEO>,
+    // pub pt_fin: &'a P2,
 }
 
-fn solve_fin<P1, P2>(c: Cube, fin_len: i32, sc: &mut SolveContext<P1, P2>)
-where
-    P1: PTable,
-    P2: PTable,
-{
-    if sc.start.elapsed() > sc.time_limit - Duration::from_millis(50) && sc.best.is_some() {
-        return;
-    }
-    if sc.stack_fin.len() as i32 == fin_len {
-        if c.is_solved() {
-            let sol_len = sc.stack_dr.len() + fin_len as usize;
-            if sc.best.as_ref().is_none_or(|best| best.len() > sol_len) {
-                let alg = sc
-                    .stack_dr
-                    .iter()
-                    .chain(sc.stack_fin.iter())
-                    .copied()
-                    .collect::<Vec<_>>();
-                sc.best = Some(alg);
-            }
-        }
-        return;
-    }
-    if sc.stack_fin.len() as i32 + sc.pt_fin.eval(&c) > fin_len {
-        return;
-    }
-    for m in Move::drud_moveset() {
-        if sc
-            .best
-            .as_ref()
-            .is_some_and(|best| best.len() <= sc.stack_dr.len() + fin_len as usize)
-        {
-            break;
-        }
-        if let Some(last) = sc.stack_fin.last().or(sc.stack_dr.last()) {
-            if last.cancels_with(m) || last.commutes_with(m) && m < last {
-                continue;
-            }
-        }
-        sc.stack_fin.push(*m);
-        solve_fin(c.apply_move(*m), fin_len, sc);
-        sc.stack_fin.pop();
-    }
-}
+// fn solve_fin<P1, P2>(c: Cube, fin_len: i32, sc: &mut SolveContext<P1, P2>)
+// where
+//     P1: PTable,
+//     P2: PTable,
+// {
+//     if sc.start.elapsed() > sc.time_limit - Duration::from_millis(50) && sc.best.is_some() {
+//         return;
+//     }
+//     if sc.stack_fin.len() as i32 == fin_len {
+//         if c.is_solved() {
+//             let sol_len = sc.stack_dr.len() + fin_len as usize;
+//             if sc.best.as_ref().is_none_or(|best| best.len() > sol_len) {
+//                 let alg = sc
+//                     .stack_dr
+//                     .iter()
+//                     .chain(sc.stack_fin.iter())
+//                     .copied()
+//                     .collect::<Vec<_>>();
+//                 sc.best = Some(alg);
+//             }
+//         }
+//         return;
+//     }
+//     if sc.stack_fin.len() as i32 + sc.pt_fin.eval(&c) > fin_len {
+//         return;
+//     }
+//     for m in Move::drud_moveset() {
+//         if sc
+//             .best
+//             .as_ref()
+//             .is_some_and(|best| best.len() <= sc.stack_dr.len() + fin_len as usize)
+//         {
+//             break;
+//         }
+//         if let Some(last) = sc.stack_fin.last().or(sc.stack_dr.last()) {
+//             if last.cancels_with(m) || last.commutes_with(m) && m < last {
+//                 continue;
+//             }
+//         }
+//         sc.stack_fin.push(*m);
+//         solve_fin(c.apply_move(*m), fin_len, sc);
+//         sc.stack_fin.pop();
+//     }
+// }
 
-fn solve_dr<P1, P2>(c: Cube, dr_len: i32, sc: &mut SolveContext<P1, P2>)
-where
-    P1: PTable,
-    P2: PTable,
-{
+fn solve_dr(c: Cube, dr_len: i32, sc: &mut SolveContext) {
     if sc.start.elapsed() > sc.time_limit - Duration::from_millis(50) && sc.best.is_some() {
         return;
     }
     if sc.stack_dr.len() as i32 == dr_len {
         if c.is_drud() {
+            if let Some(last) = sc.stack_dr.last() {
+                let ok = !last.commutes_with(&Move::U) && last.is_clockwise_turn();
+                if ok {
+                    let sol = sc
+                        .stack_dr
+                        .iter()
+                        .map(|m| m.to_string())
+                        .collect::<Vec<_>>()
+                        .join(" ");
+                    println!("found dr: {} ({})", sol, sc.stack_dr.len());
+                }
+            }
             for target_fin in 0..=13 {
-                solve_fin(c.clone(), target_fin, sc);
+                // solve_fin(c.clone(), target_fin, sc);
             }
         }
         return;
@@ -108,11 +118,7 @@ where
     }
 }
 
-fn solve<P1, P2>(c: Cube, sd: &mut SolveContext<P1, P2>)
-where
-    P1: PTable,
-    P2: PTable,
-{
+fn solve(c: Cube, sd: &mut SolveContext) {
     for dr_len in 0..=20 {
         if sd
             .best
@@ -215,26 +221,27 @@ fn main() {
         .reduce(|a, b| a.compose(&b))
         .unwrap();
 
-    let pt_drud = PT1::compute();
-    let pt_fin = PT2::compute();
+    let pt_drud = PrunTable::<CoordCO, CoordEO>::new();
+    // let pt_drud = PT1::compute();
+    // let pt_fin = PT2::compute();
 
-    let mut sd = SolveContext {
+    let mut sc = SolveContext {
         start,
         time_limit: std::time::Duration::from_secs(1),
         best: None,
         stack_dr: Vec::new(),
         stack_fin: Vec::new(),
-        pt_drud: &pt_drud,
-        pt_fin: &pt_fin,
+        pt_drud,
+        // pt_fin: &pt_fin,
     };
 
-    solve(c, &mut sd);
-    println!(
-        "{}",
-        sd.best
-            .unwrap()
-            .iter()
-            .map(|m| m.to_string())
-            .collect::<String>()
-    );
+    solve(c, &mut sc);
+    // println!(
+    //     "{}",
+    //     sd.best
+    //         .unwrap()
+    //         .iter()
+    //         .map(|m| m.to_string())
+    //         .collect::<String>()
+    // );
 }

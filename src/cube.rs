@@ -1,4 +1,4 @@
-use std::{fmt::Display, num::Wrapping};
+use std::{fmt::Debug, fmt::Display, num::Wrapping};
 
 use crate::*;
 
@@ -7,7 +7,7 @@ use crate::*;
 /// - CO=00 means correct CO relative to the axis
 /// - CO=01 means a clockwise twist is needed to correct CO relative to the axis
 /// - CO=10 means a counter-clockwise twist is needed to correct CO relative to the axis
-#[derive(Default, Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Default, Copy, Clone, Eq, PartialEq)]
 pub struct CO(pub u16);
 
 impl CO {
@@ -75,7 +75,7 @@ impl CO {
     }
 }
 
-impl Display for CO {
+impl Debug for CO {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut cos = Vec::new();
         for c in Corner::all() {
@@ -90,7 +90,7 @@ impl Display for CO {
 
 // EO encodes edge orientation at each edge slot (1 bit * 12)
 // Storage: (1 bit * 12)
-#[derive(Default, Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Default, Copy, Clone, Eq, PartialEq)]
 pub struct EO(pub u16);
 
 impl EO {
@@ -140,6 +140,18 @@ impl EO {
 
     pub fn is_bad(&self, edge: Edge) -> bool {
         (self.0 >> edge.coord()) & 1 != 0
+    }
+}
+
+impl Debug for EO {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut eos = Vec::new();
+        for e in Edge::all() {
+            eos.push(format!("{}={}", e, if self.is_bad(*e) { 1 } else { 0 }));
+        }
+        write!(f, "EO(")?;
+        write!(f, "{}", eos.join(" "))?;
+        write!(f, ")")
     }
 }
 
