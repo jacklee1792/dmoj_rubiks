@@ -5,6 +5,7 @@ use crate::*;
 pub struct CoordEO;
 
 impl Coord for CoordEO {
+    const NAME: &'static str = "CoordEO";
     const N_VALUES: usize = 2048;
 
     fn index(c: &Cube) -> usize {

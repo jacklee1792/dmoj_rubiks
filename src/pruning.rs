@@ -20,14 +20,14 @@ where
     R: Coord,
     C: Coord,
 {
-    pub fn new() -> Self {
+    pub fn new(moveset: &'static [Move]) -> Self {
         let rsym = SymTable::new();
         let mut dist = vec![None; rsym.n_conj_classes() * C::N_VALUES];
         let mut q: VecDeque<(Cube, usize)> = VecDeque::new();
         dist[0] = Some(0);
         q.push_back((Cube::default(), 0));
         while let Some((a, d)) = q.pop_front() {
-            for m in Move::all() {
+            for m in moveset {
                 let b = rsym.canonicalize(&a.apply_move(*m));
                 let b_coord = Self::coord(&rsym, &b);
                 if dist[b_coord].is_none() {
@@ -62,6 +62,11 @@ where
         let r = rsym.conj_class(R::index(&c));
         let c = C::index(&c);
         r * C::N_VALUES + c
+    }
+
+    /// Decompose the coordinate into its symmetry-composed and basic component, respectively.
+    fn decompose_coord(coord: usize) -> (usize, usize) {
+        (coord / C::N_VALUES, coord % C::N_VALUES)
     }
 }
 

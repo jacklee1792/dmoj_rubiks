@@ -4,6 +4,9 @@ use crate::*;
 
 /// Description of a coordinate which maps to a (right) coset of the cube.
 pub trait Coord {
+    /// Name of the coordinate, used for debugging purposes.
+    const NAME: &'static str;
+
     /// The number of values of the coordinate.
     const N_VALUES: usize;
 

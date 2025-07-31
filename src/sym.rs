@@ -66,13 +66,23 @@ impl Sym {
     pub fn conj_edges(self, c: &Cube) -> Cube {
         let s = self.conjugator();
         let s1 = s.inverse_edges();
-        s.compose(c).compose_edges(&s1)
+        let c2 = s.compose_edges(c).compose_edges(&s1);
+        Cube {
+            eo: c2.eo,
+            ep: c2.ep,
+            ..*c
+        }
     }
 
     pub fn conj_corners(self, c: &Cube) -> Cube {
         let s = self.conjugator();
         let s1 = s.inverse_corners();
-        s.compose(c).compose_corners(&s1)
+        let c2 = s.compose_corners(c).compose_corners(&s1);
+        Cube {
+            co: c2.co,
+            cp: c2.cp,
+            ..*c
+        }
     }
 
     pub fn conj(self, c: &Cube) -> Cube {
