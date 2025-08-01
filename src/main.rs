@@ -47,7 +47,7 @@ where
     F2: Fn(&Cube) -> i32,
 {
     fn time_over(&mut self) -> bool {
-        if !self.time_over && self.time_count % 32 == 0 {
+        if !self.time_over && self.time_count % 1024 == 0 {
             self.time_over = self.start.elapsed() > self.time_limit - Duration::from_millis(50)
                 && self.best.is_some()
         }
@@ -111,7 +111,7 @@ where
         }
         if self.stack_dr.len() as i32 == dr_len {
             if c.is_drud() {
-                for target_fin in 0..=13 {
+                for target_fin in 0..=12 {
                     self.solve_fin(c.clone(), target_fin);
                 }
             }
@@ -240,7 +240,7 @@ fn main() {
     let start = std::time::Instant::now();
 
     let pt_co = PrunTable::<CoordCO, CoordESlice>::new(Move::all());
-    // let pt_eo = PrunTable::<CoordEO, CoordESlice>::new(Move::all());
+    let pt_eo = PrunTable::<CoordEO, CoordESlice>::new(Move::all());
     let pt_cp = PrunTable::<CoordCP, CoordESliceEP>::new(Move::drud_moveset());
     let pt_ep = PrunTable::<CoordEP, CoordESliceEP>::new(Move::drud_moveset());
     eprintln!("init: {:.2}s", start.elapsed().as_secs_f64());
@@ -251,8 +251,8 @@ fn main() {
         best: None,
         stack_dr: Vec::new(),
         stack_fin: Vec::new(),
-        eval_drud: |c: &Cube| pt_co.eval(c),
-        eval_fin: |c: &Cube| pt_cp.eval(c).max(pt_ep.eval(c)),
+        eval_drud: |c: &Cube| i32::max(pt_co.eval(c), pt_eo.eval(c)),
+        eval_fin: |c: &Cube| i32::max(pt_cp.eval(c), pt_ep.eval(c)),
         time_count: 0,
         time_over: false,
     };
