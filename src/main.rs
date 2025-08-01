@@ -23,103 +23,111 @@ use std::{
     time::Duration,
 };
 
-struct SolveContext {
+struct Solver<F1, F2>
+where F1: Fn(&Cube) -> i32,
+    F2: Fn(&Cube) -> i32,
+{
     pub start: std::time::Instant,
     pub time_limit: std::time::Duration,
 
     pub best: Option<Vec<Move>>,
     pub stack_dr: Vec<Move>,
     pub stack_fin: Vec<Move>,
-    pub pt_drud: PrunTable<CoordCO, CoordESlice>,
-    pub pt_fin: PrunTable<CoordCP, CoordESliceEP>,
+    pub eval_drud: F1,
+    pub eval_fin: F2,
 }
 
-fn solve_fin(c: Cube, fin_len: i32, sc: &mut SolveContext) {
-    if sc.start.elapsed() > sc.time_limit - Duration::from_millis(50) && sc.best.is_some() {
-        return;
-    }
-    if sc.stack_fin.len() as i32 == fin_len {
-        if c.is_solved() {
-            let sol_len = sc.stack_dr.len() + fin_len as usize;
-            if sc.best.as_ref().is_none_or(|best| best.len() > sol_len) {
-                let alg = sc
-                    .stack_dr
-                    .iter()
-                    .chain(sc.stack_fin.iter())
-                    .copied()
-                    .collect::<Vec<_>>();
-                eprintln!(
-                    "{} ({})",
-                    alg.iter()
-                        .map(|m| m.to_string())
-                        .collect::<Vec<_>>()
-                        .join(" "),
-                    alg.len()
-                );
-                sc.best = Some(alg);
-            }
-        }
-        return;
-    }
-    if sc.stack_fin.len() as i32 + sc.pt_fin.eval(&c) > fin_len {
-        return;
-    }
-    for m in Move::drud_moveset() {
-        if sc
-            .best
-            .as_ref()
-            .is_some_and(|best| best.len() <= sc.stack_dr.len() + fin_len as usize)
-        {
-            break;
-        }
-        if let Some(last) = sc.stack_fin.last().or(sc.stack_dr.last()) {
-            if last.cancels_with(m) || last.commutes_with(m) && m < last {
-                continue;
-            }
-        }
-        sc.stack_fin.push(*m);
-        solve_fin(c.apply_move(*m), fin_len, sc);
-        sc.stack_fin.pop();
-    }
-}
-
-fn solve_dr(c: Cube, dr_len: i32, sc: &mut SolveContext) {
-    if sc.start.elapsed() > sc.time_limit - Duration::from_millis(50) && sc.best.is_some() {
-        return;
-    }
-    if sc.stack_dr.len() as i32 == dr_len {
-        if c.is_drud() {
-            for target_fin in 0..=13 {
-                solve_fin(c.clone(), target_fin, sc);
-            }
-        }
-        return;
-    }
-    if sc.stack_dr.len() as i32 + sc.pt_drud.eval(&c) > dr_len {
-        return;
-    }
-    for m in Move::all() {
-        if let Some(last) = sc.stack_dr.last() {
-            if last.cancels_with(m) || last.commutes_with(m) && m < last {
-                continue;
-            }
-        }
-        sc.stack_dr.push(*m);
-        solve_dr(c.apply_move(*m), dr_len, sc);
-        sc.stack_dr.pop();
-    }
-}
-
-fn solve(c: Cube, sd: &mut SolveContext) {
-    for dr_len in 0..=20 {
-        if sd
-            .best
-            .as_ref()
-            .is_some_and(|best| dr_len as usize >= best.len())
-        {
+impl<F1, F2> Solver<F1, F2> where F1: Fn(&Cube) -> i32,
+    F2: Fn(&Cube) -> i32,
+ {
+    fn solve_fin(&mut self, c: Cube, fin_len: i32) {
+        if self.start.elapsed() > self.time_limit - Duration::from_millis(50) && self.best.is_some() {
             return;
         }
-        solve_dr(c.clone(), dr_len, sd);
+        if self.stack_fin.len() as i32 == fin_len {
+            if c.is_solved() {
+                let sol_len = self.stack_dr.len() + fin_len as usize;
+                if self.best.as_ref().is_none_or(|best| best.len() > sol_len) {
+                    let alg = self
+                        .stack_dr
+                        .iter()
+                        .chain(self.stack_fin.iter())
+                        .copied()
+                        .collect::<Vec<_>>();
+                    eprintln!(
+                        "{} ({}) - {:.2}s",
+                        alg.iter()
+                            .map(|m| m.to_string())
+                            .collect::<Vec<_>>()
+                            .join(" "),
+                        alg.len(),
+                        self.start.elapsed().as_secs_f64(),
+                    );
+                    self.best = Some(alg);
+                }
+            }
+            return;
+        }
+        if self.stack_fin.len() as i32 + (self.eval_fin)(&c) > fin_len {
+            return;
+        }
+        for m in Move::drud_moveset() {
+            if self
+                .best
+                .as_ref()
+                .is_some_and(|best| best.len() <= self.stack_dr.len() + fin_len as usize)
+            {
+                break;
+            }
+            if let Some(last) = self.stack_fin.last().or(self.stack_dr.last()) {
+                if last.cancels_with(m) || last.commutes_with(m) && m < last {
+                    continue;
+                }
+            }
+            self.stack_fin.push(*m);
+            self.solve_fin(c.apply_move(*m), fin_len);
+            self.stack_fin.pop();
+        }
+    }
+
+    fn solve_dr(&mut self, c: Cube, dr_len: i32) {
+        if self.start.elapsed() > self.time_limit - Duration::from_millis(50) && self.best.is_some() {
+            return;
+        }
+        if self.stack_dr.len() as i32 == dr_len {
+            if c.is_drud() {
+                for target_fin in 0..=13 {
+                    self.solve_fin(c.clone(), target_fin);
+                }
+            }
+            return;
+        }
+        if self.stack_dr.len() as i32 + (self.eval_drud)(&c) > dr_len {
+            return;
+        }
+        for m in Move::all() {
+            if let Some(last) = self.stack_dr.last() {
+                if last.cancels_with(m) || last.commutes_with(m) && m < last {
+                    continue;
+                }
+            }
+            self.stack_dr.push(*m);
+            self.solve_dr(c.apply_move(*m), dr_len);
+            self.stack_dr.pop();
+        }
+    }
+
+    fn solve(&mut self, c: Cube) {
+        for dr_len in 0..=20 {
+            if self
+                .best
+                .as_ref()
+                .is_some_and(|best| dr_len as usize >= best.len())
+            {
+                return;
+            }
+            self.solve_dr(c.clone(), dr_len);
+        }
     }
 }
 
@@ -202,34 +210,46 @@ fn main() {
     use Edge::*;
     use Move::*;
 
-    let start = std::time::Instant::now();
     // let c = read_cube_net();
 
-    let alg = "U' F2 U B2 L2 D B2 D' R2 D' R2 U2 L2 B' L B2 F' R D' L' B2 L' U2";
-    let c = alg
-        .split_whitespace()
-        .map(|m| Move::try_from(m).unwrap())
-        .map(|m| Cube::from(m))
-        .reduce(|a, b| a.compose(&b))
-        .unwrap();
+    let cases = vec![
+        "B2 L2 U2 L2 U' L2 F2 D2 L2 U F2 L2 U' R' U2 B F2 U' R' D2 L D B",
+        "F2 L2 B2 U B2 R2 D' F2 U' B2 D2 R2 U' B' U2 L2 D' B' D' U' B' L B",
+        "F2 U F2 U B2 D' R2 F2 U L2 U B2 U' R' U' B D U L2 F L' D' F2",
+        "L2 D2 L2 B2 F2 D2 B2 L2 D' B2 L2 U2 R' D L F' U L' U' L U R' U'",
+        "U L2 U2 L2 B2 L2 R2 D F2 D' U2 B2 U' L' B R F' U' R' B2 F U L' U'",
+    ];
 
-    let pt_drud = PrunTable::<CoordCO, CoordESlice>::new(Move::all());
-    let pt_fin = PrunTable::<CoordCP, CoordESliceEP>::new(Move::drud_moveset());
+    for alg in cases {
+        println!("solving: {}", alg);
+        let start = std::time::Instant::now();
+        let c = alg
+            .split_whitespace()
+            .map(|m| Move::try_from(m).unwrap())
+            .map(|m| Cube::from(m))
+            .reduce(|a, b| a.compose(&b))
+            .unwrap();
 
-    let mut sc = SolveContext {
-        start,
-        time_limit: std::time::Duration::from_secs(1),
-        best: None,
-        stack_dr: Vec::new(),
-        stack_fin: Vec::new(),
-        pt_drud,
-        pt_fin,
-    };
+        let pt_co = PrunTable::<CoordCO, CoordESlice>::new(Move::all());
+        let pt_eo = PrunTable::<CoordEO, CoordESlice>::new(Move::all());
+        let pt_fin = PrunTable::<CoordCP, CoordESliceEP>::new(Move::drud_moveset());
+        println!("init: {:.2}s", start.elapsed().as_secs_f64());
 
-    solve(c, &mut sc);
+        let mut s = Solver {
+            start,
+            time_limit: std::time::Duration::from_secs(1),
+            best: None,
+            stack_dr: Vec::new(),
+            stack_fin: Vec::new(),
+            eval_drud: |c: &Cube| { i32::max(pt_co.eval(c), pt_eo.eval(c)) },
+            eval_fin: |c: &Cube| { pt_fin.eval(c) },
+        };
+        s.solve(c);
+        println!();
+    }
     // println!(
     //     "{}",
-    //     sd.best
+    //     sc.best
     //         .unwrap()
     //         .iter()
     //         .map(|m| m.to_string())

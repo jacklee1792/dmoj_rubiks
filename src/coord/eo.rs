@@ -29,10 +29,10 @@ impl Coord for CoordEO {
             Sym::UB,
             Sym::DF,
             Sym::DB,
-            // Sym::UF2,
-            // Sym::UB2,
-            // Sym::DF2,
-            // Sym::DB2,
+            Sym::UF2,
+            Sym::UB2,
+            Sym::DF2,
+            Sym::DB2,
         ]
     }
 }
