@@ -24,7 +24,8 @@ use std::{
 };
 
 struct Solver<F1, F2>
-where F1: Fn(&Cube) -> i32,
+where
+    F1: Fn(&Cube) -> i32,
     F2: Fn(&Cube) -> i32,
 {
     pub start: std::time::Instant,
@@ -37,11 +38,14 @@ where F1: Fn(&Cube) -> i32,
     pub eval_fin: F2,
 }
 
-impl<F1, F2> Solver<F1, F2> where F1: Fn(&Cube) -> i32,
+impl<F1, F2> Solver<F1, F2>
+where
+    F1: Fn(&Cube) -> i32,
     F2: Fn(&Cube) -> i32,
- {
+{
     fn solve_fin(&mut self, c: Cube, fin_len: i32) {
-        if self.start.elapsed() > self.time_limit - Duration::from_millis(50) && self.best.is_some() {
+        if self.start.elapsed() > self.time_limit - Duration::from_millis(50) && self.best.is_some()
+        {
             return;
         }
         if self.stack_fin.len() as i32 == fin_len {
@@ -91,7 +95,8 @@ impl<F1, F2> Solver<F1, F2> where F1: Fn(&Cube) -> i32,
     }
 
     fn solve_dr(&mut self, c: Cube, dr_len: i32) {
-        if self.start.elapsed() > self.time_limit - Duration::from_millis(50) && self.best.is_some() {
+        if self.start.elapsed() > self.time_limit - Duration::from_millis(50) && self.best.is_some()
+        {
             return;
         }
         if self.stack_dr.len() as i32 == dr_len {
@@ -241,8 +246,8 @@ fn main() {
             best: None,
             stack_dr: Vec::new(),
             stack_fin: Vec::new(),
-            eval_drud: |c: &Cube| { i32::max(pt_co.eval(c), pt_eo.eval(c)) },
-            eval_fin: |c: &Cube| { pt_fin.eval(c) },
+            eval_drud: |c: &Cube| i32::max(pt_co.eval(c), pt_eo.eval(c)),
+            eval_fin: |c: &Cube| pt_fin.eval(c),
         };
         s.solve(c);
         println!();
