@@ -29,12 +29,12 @@ where
         while let Some((a, d)) = q.pop_front() {
             for m in moveset {
                 let b = rsym.canonicalize(&a.apply_move(*m));
-                let b_coord = Self::coord(&rsym, &b);
+                let b_coord = Self::coord_no_canonicalize(&rsym, &b);
                 if dist[b_coord].is_none() {
                     // This is a new family of coordinates we haven't seen before
                     for s in rsym.self_syms(&b) {
                         let c = C::conj(&b, s);
-                        let c_coord = Self::coord(&rsym, &c);
+                        let c_coord = Self::coord_no_canonicalize(&rsym, &c);
                         dist[c_coord] = Some((d + 1) as u8);
                     }
                     q.push_back((b, d + 1));
@@ -59,6 +59,14 @@ where
     /// Compute the symmetry-reduced composite coordinate.
     fn coord(rsym: &SymTable<R>, c: &Cube) -> usize {
         let c = rsym.canonicalize(c);
+        let r = rsym.conj_class(R::index(&c));
+        let c = C::index(&c);
+        r * C::N_VALUES + c
+    }
+
+    /// Compute the symmetry-reduced composite coordinate for a cube which already has its
+    /// symmetry-reduced coordinate canonicalized.
+    fn coord_no_canonicalize(rsym: &SymTable<R>, c: &Cube) -> usize {
         let r = rsym.conj_class(R::index(&c));
         let c = C::index(&c);
         r * C::N_VALUES + c
