@@ -1,4 +1,4 @@
-use std::{fmt::Debug, fmt::Display, num::Wrapping};
+use std::{fmt::Debug, num::Wrapping};
 
 use crate::*;
 
