@@ -1,6 +1,8 @@
 # dmoj_rubiks
 
-2-phase Rubik's cube solver. Some notable things:
+2-phase Rubik's cube solver. 3rd AC on the site!
+
+Some notable things:
 - No `unsafe` usage
 - No SIMD intrinsics
 - No cube transformations based on lookup tables
