@@ -211,9 +211,9 @@ fn read_cube_net() -> Cube {
 }
 
 fn main() {
-    
-    
-    
+    for s in 0..16 {
+        println!("{s} => {}", Sym::from_coord(s).conjugator().repr_string())
+    }
 
     // let c = read_cube_net();
 

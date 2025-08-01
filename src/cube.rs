@@ -282,6 +282,17 @@ impl Cube {
     pub fn apply_move(&self, m: Move) -> Self {
         self.compose(&m.into())
     }
+
+    /// Produce a string which can be used in code to construct the cube with no overhead.
+    pub fn repr_string(&self) -> String {
+        format!(
+            "Cube::from_repr(0x{:04x}, 0x{:04x}, 0x{:012x}, 0x{:08x})",
+            self.eo.0,
+            self.co.0,
+            self.ep.repr(),
+            self.cp.repr(),
+        )
+    }
 }
 
 impl From<Move> for Cube {

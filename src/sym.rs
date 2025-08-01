@@ -38,21 +38,26 @@ impl Sym {
     // Symmetry via mirror across the M slice, not suitable for CO.
     const LR: Cube = Cube::from_repr(0x000, 0x0000, 0xab8956741230, 0x67452301);
 
-    fn conjugator(self) -> Cube {
-        let mut c = Cube::default();
-        if self.0 & 1 != 0 {
-            c = c.compose(&Self::Y);
+    pub fn conjugator(self) -> Cube {
+        match self.0 {
+            0 => Cube::from_repr(0x0000, 0x0000, 0xba9876543210, 0x76543210),
+            1 => Cube::from_repr(0x0000, 0x0000, 0x8ba947650321, 0x47650321),
+            2 => Cube::from_repr(0x0000, 0x0000, 0x98ba54761032, 0x54761032),
+            3 => Cube::from_repr(0x0000, 0x0000, 0xa98b65472103, 0x65472103),
+            4 => Cube::from_repr(0x0000, 0x0000, 0x89ab30127456, 0x01234567),
+            5 => Cube::from_repr(0x0000, 0x0000, 0xb89a23016745, 0x30127456),
+            6 => Cube::from_repr(0x0000, 0x0000, 0xab8912305674, 0x23016745),
+            7 => Cube::from_repr(0x0000, 0x0000, 0x9ab801234567, 0x12305674),
+            8 => Cube::from_repr(0x0000, 0x0000, 0xab8956741230, 0x67452301),
+            9 => Cube::from_repr(0x0000, 0x0000, 0x9ab845670123, 0x56741230),
+            10 => Cube::from_repr(0x0000, 0x0000, 0x89ab74563012, 0x45670123),
+            11 => Cube::from_repr(0x0000, 0x0000, 0xb89a67452301, 0x74563012),
+            12 => Cube::from_repr(0x0000, 0x0000, 0x98ba10325476, 0x10325476),
+            13 => Cube::from_repr(0x0000, 0x0000, 0xa98b21036547, 0x21036547),
+            14 => Cube::from_repr(0x0000, 0x0000, 0xba9832107654, 0x32107654),
+            15 => Cube::from_repr(0x0000, 0x0000, 0x8ba903214765, 0x03214765),
+            _ => panic!("invalid symmetry coordinate: {}", self.0),
         }
-        if self.0 & 2 != 0 {
-            c = c.compose(&Self::Y2);
-        }
-        if self.0 & 4 != 0 {
-            c = c.compose(&Self::X2);
-        }
-        if self.0 & 8 != 0 {
-            c = c.compose(&Self::LR);
-        }
-        c
     }
 
     pub fn coord(self) -> usize {
