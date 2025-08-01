@@ -211,53 +211,46 @@ fn read_cube_net() -> Cube {
 }
 
 fn main() {
-    for s in 0..16 {
-        println!("{s} => {}", Sym::from_coord(s).conjugator().repr_string())
-    }
+    // let cases = vec![
+    //     "B2 L2 U2 L2 U' L2 F2 D2 L2 U F2 L2 U' R' U2 B F2 U' R' D2 L D B",
+    //     "F2 L2 B2 U B2 R2 D' F2 U' B2 D2 R2 U' B' U2 L2 D' B' D' U' B' L B",
+    //     "F2 U F2 U B2 D' R2 F2 U L2 U B2 U' R' U' B D U L2 F L' D' F2",
+    //     "L2 D2 L2 B2 F2 D2 B2 L2 D' B2 L2 U2 R' D L F' U L' U' L U R' U'",
+    //     "U L2 U2 L2 B2 L2 R2 D F2 D' U2 B2 U' L' B R F' U' R' B2 F U L' U'",
+    // ];
+    let alg = "D R2 B2 F2 R2 F2 U F2 U B2 F2 D2 B' R U F' D2 L U2 F D' F2";
+    let c = alg
+        .split_whitespace()
+        .map(|m| Move::try_from(m).unwrap())
+        .map(|m| Cube::from(m))
+        .reduce(|a, b| a.compose(&b))
+        .unwrap();
 
     // let c = read_cube_net();
+    let start = std::time::Instant::now();
 
-    let cases = vec![
-        "B2 L2 U2 L2 U' L2 F2 D2 L2 U F2 L2 U' R' U2 B F2 U' R' D2 L D B",
-        "F2 L2 B2 U B2 R2 D' F2 U' B2 D2 R2 U' B' U2 L2 D' B' D' U' B' L B",
-        "F2 U F2 U B2 D' R2 F2 U L2 U B2 U' R' U' B D U L2 F L' D' F2",
-        "L2 D2 L2 B2 F2 D2 B2 L2 D' B2 L2 U2 R' D L F' U L' U' L U R' U'",
-        "U L2 U2 L2 B2 L2 R2 D F2 D' U2 B2 U' L' B R F' U' R' B2 F U L' U'",
-    ];
+    let pt_co = PrunTable::<CoordCO, CoordESlice>::new(Move::all());
+    let pt_eo = PrunTable::<CoordEO, CoordESlice>::new(Move::all());
+    let pt_cp = PrunTable::<CoordCP, CoordESliceEP>::new(Move::drud_moveset());
+    let pt_ep = PrunTable::<CoordEP, CoordESliceEP>::new(Move::drud_moveset());
+    eprintln!("init: {:.2}s", start.elapsed().as_secs_f64());
 
-    for alg in cases {
-        println!("solving: {}", alg);
-        let start = std::time::Instant::now();
-        let c = alg
-            .split_whitespace()
-            .map(|m| Move::try_from(m).unwrap())
-            .map(|m| Cube::from(m))
-            .reduce(|a, b| a.compose(&b))
-            .unwrap();
-
-        let pt_co = PrunTable::<CoordCO, CoordESlice>::new(Move::all());
-        let pt_eo = PrunTable::<CoordEO, CoordESlice>::new(Move::all());
-        let pt_fin = PrunTable::<CoordCP, CoordESliceEP>::new(Move::drud_moveset());
-        println!("init: {:.2}s", start.elapsed().as_secs_f64());
-
-        let mut s = Solver {
-            start,
-            time_limit: std::time::Duration::from_secs(1),
-            best: None,
-            stack_dr: Vec::new(),
-            stack_fin: Vec::new(),
-            eval_drud: |c: &Cube| i32::max(pt_co.eval(c), pt_eo.eval(c)),
-            eval_fin: |c: &Cube| pt_fin.eval(c),
-        };
-        s.solve(c);
-        println!();
-    }
-    // println!(
-    //     "{}",
-    //     sc.best
-    //         .unwrap()
-    //         .iter()
-    //         .map(|m| m.to_string())
-    //         .collect::<String>()
-    // );
+    let mut s = Solver {
+        start,
+        time_limit: std::time::Duration::from_secs(1),
+        best: None,
+        stack_dr: Vec::new(),
+        stack_fin: Vec::new(),
+        eval_drud: |c: &Cube| i32::max(pt_co.eval(c), pt_eo.eval(c)),
+        eval_fin: |c: &Cube| i32::max(pt_cp.eval(c), pt_ep.eval(c)),
+    };
+    s.solve(c);
+    println!(
+        "{}",
+        s.best
+            .unwrap()
+            .iter()
+            .map(|m| m.to_string())
+            .collect::<String>()
+    );
 }

@@ -64,7 +64,7 @@ impl Display for Edge {
 }
 
 impl Edge {
-    pub fn coord(&self) -> usize {
+    pub const fn coord(&self) -> usize {
         use Edge::*;
         match self {
             UF => 0,
@@ -177,7 +177,7 @@ impl Display for Corner {
 }
 
 impl Corner {
-    pub fn coord(&self) -> usize {
+    pub const fn coord(&self) -> usize {
         use Corner::*;
         match self {
             UFR => 0,
