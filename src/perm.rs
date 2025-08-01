@@ -222,36 +222,52 @@ impl<const N: usize> Perm<N> {
     /// Index of this permutation among all permutations, considering only where the given
     /// indices are mapped to. The index of a permutation that keeps all indices in-place is 0.
     pub fn index_partial_unordered(&self, indices: u16) -> usize {
+        // let mut img = 0u16;
+        // let mut m = indices;
+        // let k = indices.count_ones() as usize;
+        // while m != 0 {
+        //     let i = m.trailing_zeros() as usize;
+        //     let j = self.dest(i);
+        //     let b = 1 << j;
+        //     let below = (indices & (b - 1)).count_ones() as usize;
+        //     let j = if indices & b != 0 {
+        //         below
+        //     } else {
+        //         k + j - below
+        //     };
+        //     img |= 1 << j;
+        //     m &= m - 1;
+        // }
+        
+        // Image of the permutation on these indices
         let mut img = 0u16;
         let mut m = indices;
-        let k = indices.count_ones() as usize;
         while m != 0 {
             let i = m.trailing_zeros() as usize;
-            let j = self.dest(i);
-            let b = 1 << j;
-            let below = (indices & (b - 1)).count_ones() as usize;
-            let j = if indices & b != 0 {
-                below
-            } else {
-                k + j - below
-            };
-            img |= 1 << j;
+            img |= 1 << self.dest(i);
             m &= m - 1;
         }
 
+        // Ugly optimization for speed
+        // Special case: if the image keeps everything in place, the coordinate should be 0
+        let z = (1 << indices.count_ones()) - 1;
+        if img == indices {
+            img = z
+        } else if img == z {
+            img = indices;
+        }
+
         let mut ans = 0;
-        let mut rem = k;
-        let mut p = 0;
+        let mut i = 1;
         while img != 0 {
             let j = img.trailing_zeros() as usize;
-            ans += binom(N - p, rem as usize) - binom(N - j as usize, rem as usize);
-            p = (j + 1) as usize;
+            ans += binom(j, i);
+            i += 1;
             img &= img - 1;
-            rem -= 1;
         }
         ans
     }
-
+    
     /// Mask the permutation, deleting other indices which are not in the mask. Assumes that
     /// the mask and its complement are disjoint, i.e. no elements are permuted between the two.
     pub fn mask<const K: usize>(&self, indices: &[usize; K]) -> Perm<K> {

@@ -36,6 +36,9 @@ where
     pub stack_fin: Vec<Move>,
     pub eval_drud: F1,
     pub eval_fin: F2,
+
+    pub time_count: usize,
+    pub time_over: bool,
 }
 
 impl<F1, F2> Solver<F1, F2>
@@ -43,8 +46,16 @@ where
     F1: Fn(&Cube) -> i32,
     F2: Fn(&Cube) -> i32,
 {
+    fn time_over(&mut self) -> bool {
+        if !self.time_over && self.time_count % 32 == 0 {
+            self.time_over = self.start.elapsed() > self.time_limit - Duration::from_millis(50) && self.best.is_some()
+        }
+        self.time_count += 1;
+        self.time_over
+    }
+
     fn solve_fin(&mut self, c: Cube, fin_len: i32) {
-        if self.start.elapsed() > self.time_limit - Duration::from_millis(50) && self.best.is_some()
+        if self.time_over()
         {
             return;
         }
@@ -95,7 +106,7 @@ where
     }
 
     fn solve_dr(&mut self, c: Cube, dr_len: i32) {
-        if self.start.elapsed() > self.time_limit - Duration::from_millis(50) && self.best.is_some()
+        if self.time_over()
         {
             return;
         }
@@ -218,7 +229,7 @@ fn main() {
     //     "L2 D2 L2 B2 F2 D2 B2 L2 D' B2 L2 U2 R' D L F' U L' U' L U R' U'",
     //     "U L2 U2 L2 B2 L2 R2 D F2 D' U2 B2 U' L' B R F' U' R' B2 F U L' U'",
     // ];
-    let alg = "D R2 B2 F2 R2 F2 U F2 U B2 F2 D2 B' R U F' D2 L U2 F D' F2";
+    let alg = "B2 R2 D L2 F2 L2 U2 B2 D L2 D' F2 U' B' R U L' B' D R D' L2 B' U'";
     let c = alg
         .split_whitespace()
         .map(|m| Move::try_from(m).unwrap())
@@ -230,7 +241,7 @@ fn main() {
     let start = std::time::Instant::now();
 
     let pt_co = PrunTable::<CoordCO, CoordESlice>::new(Move::all());
-    let pt_eo = PrunTable::<CoordEO, CoordESlice>::new(Move::all());
+    // let pt_eo = PrunTable::<CoordEO, CoordESlice>::new(Move::all());
     let pt_cp = PrunTable::<CoordCP, CoordESliceEP>::new(Move::drud_moveset());
     let pt_ep = PrunTable::<CoordEP, CoordESliceEP>::new(Move::drud_moveset());
     eprintln!("init: {:.2}s", start.elapsed().as_secs_f64());
@@ -241,8 +252,10 @@ fn main() {
         best: None,
         stack_dr: Vec::new(),
         stack_fin: Vec::new(),
-        eval_drud: |c: &Cube| i32::max(pt_co.eval(c), pt_eo.eval(c)),
-        eval_fin: |c: &Cube| i32::max(pt_cp.eval(c), pt_ep.eval(c)),
+        eval_drud: |c: &Cube| pt_co.eval(c),
+        eval_fin: |c: &Cube| pt_cp.eval(c).max(pt_ep.eval(c)),
+        time_count: 0,
+        time_over: false,
     };
     s.solve(c);
     println!(
