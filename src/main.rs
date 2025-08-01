@@ -48,15 +48,15 @@ where
 {
     fn time_over(&mut self) -> bool {
         if !self.time_over && self.time_count % 32 == 0 {
-            self.time_over = self.start.elapsed() > self.time_limit - Duration::from_millis(50) && self.best.is_some()
+            self.time_over = self.start.elapsed() > self.time_limit - Duration::from_millis(50)
+                && self.best.is_some()
         }
         self.time_count += 1;
         self.time_over
     }
 
     fn solve_fin(&mut self, c: Cube, fin_len: i32) {
-        if self.time_over()
-        {
+        if self.time_over() {
             return;
         }
         if self.stack_fin.len() as i32 == fin_len {
@@ -106,8 +106,7 @@ where
     }
 
     fn solve_dr(&mut self, c: Cube, dr_len: i32) {
-        if self.time_over()
-        {
+        if self.time_over() {
             return;
         }
         if self.stack_dr.len() as i32 == dr_len {

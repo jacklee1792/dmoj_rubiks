@@ -238,7 +238,7 @@ impl<const N: usize> Perm<N> {
         //     img |= 1 << j;
         //     m &= m - 1;
         // }
-        
+
         // Image of the permutation on these indices
         let mut img = 0u16;
         let mut m = indices;
@@ -267,7 +267,7 @@ impl<const N: usize> Perm<N> {
         }
         ans
     }
-    
+
     /// Mask the permutation, deleting other indices which are not in the mask. Assumes that
     /// the mask and its complement are disjoint, i.e. no elements are permuted between the two.
     pub fn mask<const K: usize>(&self, indices: &[usize; K]) -> Perm<K> {
